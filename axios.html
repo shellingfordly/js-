@@ -1,0 +1,146 @@
+<title>Axios</title>
+
+<script>
+
+  // 构造函数
+  function Axios(config) {
+    this.defaults = config
+    // 拦截器
+    this.interceptors = {
+      request: new InterceptorManger(),
+      response: new InterceptorManger()
+    }
+  }
+
+  // 拦截器 管理构造函数
+  function InterceptorManger() {
+    this.handlers = []
+  }
+
+  InterceptorManger.prototype.use = function (fulfilled, rejected) {
+    this.handlers.push({
+      fulfilled, rejected
+    })
+  }
+
+
+  // 相关的方法
+  Axios.prototype.request = function (config) {
+    let promise = Promise.resolve(config)
+    const chains = [dispatchRequest, undefined]
+
+    // 将请求拦截器的回调函数压入 chains 前
+    this.interceptors.request.handlers.forEach(item => {
+      /**
+       * 因为请求拦截器通过 unshift 添加，所以后设置的请求拦截器函数 将被前执行
+      */
+      chains.unshift(item.fulfilled, item.rejected)
+    })
+
+    // 将 响应拦截器的回调函数压入 chains 后
+    this.interceptors.response.handlers.forEach(item => {
+      /**
+       * 而响应拦截器通过 push 添加，因此按照设置顺序执行
+      */
+      chains.push(item.fulfilled, item.rejected)
+    })
+
+    while (chains.length) {
+      promise.then(chains.shift(), chains.shift())
+    }
+
+    return promise
+  }
+
+  function dispatchRequest(config) {
+    return xhrAdapter(config)
+  }
+
+  // 发起请求 和 取消请求 的具体函数
+  function xhrAdapter(config) {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        console.log('发起了请求')
+      }, 2000)
+      // 取消请求
+      if (config.cancel) {
+        config.cancel.promise.then(() => {
+          console.log('取消了请求')
+        })
+      }
+    })
+  }
+
+  // 取消请求的构造函数
+  function CancelToken(executor) {
+    let resolvePromise = null
+
+    this.promise = new Promise((resolve) => {
+      resolvePromise = resolve
+    })
+
+    executor(() => {
+      resolvePromise()
+    })
+  }
+
+  function createInstance(config) {
+    /**
+     * 实例化一个 Axios 对象
+     * 但是context不能当函数使用
+    */
+    const context = new Axios(config)
+
+    /**
+     * 将发送请求的方法 request 赋给 instance，并将其 this 指向 一个 Axios 实例
+    */
+    const instance = Axios.prototype.request.bind(context)
+
+    // 将 Axios 上的属性复制到 instance 上
+    Object.keys(Axios.prototype).forEach(key => {
+      instance[key] = Axios.prototype[key].bind(context)
+    })
+
+    // 复制 Axios 实例 instance 的属性
+    Object.keys(context).forEach(key => {
+      instance[key] = context[key]
+    })
+
+    return instance
+  }
+
+  const axios = createInstance()
+
+
+  axios.interceptors.request.use(function one(config) {
+    console.log('请求拦截器 - 1')
+  })
+  axios.interceptors.request.use(function two(config) {
+    console.log('请求拦截器 - 2')
+  })
+
+  axios.interceptors.response.use(function one(config) {
+    console.log('响应拦截器 - 1')
+  })
+  axios.interceptors.response.use(function two(config) {
+    console.log('响应拦截器 - 2')
+  })
+
+
+  let cancel = null
+
+  axios({
+    url: 'xxx',
+    methods: 'GET',
+    cancel: new CancelToken((resolve) => {
+      cancel = resolve
+    })
+  })
+
+
+  setTimeout(() => {
+    cancel()
+  }, 1000)
+
+
+</script>
