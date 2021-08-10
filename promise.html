@@ -1,38 +1,176 @@
-<!DOCTYPE html>
-<html lang="en">
-
-<head>
-  <meta charset="UTF-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Document</title>
-</head>
-
-<body>
-
-</body>
-
 <script>
-  const config = {
-    baseUrl: 'xxxx',
-    methods: 'GET'
-  }
-  const promise = Promise.resolve(config)
+  // const config = {
+  //   baseUrl: 'xxxx',
+  //   methods: 'GET'
+  // }
+  // const promise = Promise.resolve(config)
 
 
-  promise.then((res) => {
-    console.log('success', res)
-    return Promise.reject(res)
-  }, (err) => {
-    console.log('error', err)
-    return Promise.reject(err)
-  }).then((res) => {
-    console.log('success - 2', res)
-    return Promise.resolve(res)
-  }, (err) => {
-    console.log('error - 2', err)
-    return Promise.reject(err)
-  })
+  // promise.then((res) => {
+  //   console.log('success', res)
+  //   return Promise.reject(res)
+  // }, (err) => {
+  //   console.log('error', err)
+  //   return Promise.reject(err)
+  // }).then((res) => {
+  //   console.log('success - 2', res)
+  //   return Promise.resolve(res)
+  // }, (err) => {
+  //   console.log('error - 2', err)
+  //   return Promise.reject(err)
+  // })
 </script>
 
-</html>
+<script>
+  const PromiseState = {
+    Pending: 'pending',
+    Fulfilled: 'fulfilled',
+    Rejected: 'rejected'
+  }
+
+  function Promise(executor) {
+
+    this.promiseState = PromiseState.Pending
+    this.promiseResult = undefined
+    this.callback = []
+    this.thenPromise = null
+
+    const isPending = () => {
+      if (this.promiseState === PromiseState.Pending) {
+        return true
+      }
+      else {
+        return false
+      }
+    }
+
+    const resolve = (data) => {
+      if (isPending()) {
+        this.promiseState = PromiseState.Fulfilled
+        this.promiseResult = data
+        // 执行回调函数
+        this.callback.forEach(item => {
+          if (item.resolve) {
+            item.resolve(data)
+          }
+        })
+        this.callback = []
+      }
+    }
+
+    const reject = (err) => {
+      if (isPending()) {
+        this.promiseState = PromiseState.Rejected
+        this.promiseResult = err || 'Err'
+        // 执行回调函数
+        this.callback.forEach(item => {
+          if (item.reject) {
+            result = item.resolve(err)
+          }
+        })
+        this.callback = []
+      }
+    }
+
+
+    try {
+      executor(resolve, reject)
+    } catch (error) {
+      reject(error)
+    }
+  }
+
+  Promise.prototype.then = function (resolve, reject) {
+    let result = undefined
+
+    const then = () => {
+      if (this.promiseState === PromiseState.Fulfilled) {
+        resolve && (result = resolve(this.promiseResult))
+      }
+      if (this.promiseState === PromiseState.Rejected) {
+        reject && (result = reject(this.promiseResult))
+      }
+    }
+
+    const self = this
+
+
+    return new Promise((res, rej) => {
+      setTimeout(() => {
+        try {
+          then()
+          if (this.promiseState === PromiseState.Pending) {
+            this.callback.push({
+              resolve: () => {
+                let state = PromiseState.Fulfilled
+                try {
+                  let result = resolve(self.promiseResult)
+                } catch (error) {
+                  state = PromiseState.Rejected
+                  result = error
+                }
+                returnPromiseState(result, state, { res, rej })
+              },
+              reject: () => {
+                let state = PromiseState.Fulfilled
+                try {
+                  let result = reject(self.promiseResult)
+                } catch (error) {
+                  state = PromiseState.Rejected
+                  result = error
+                }
+                returnPromiseState(result, PromiseState.Rejected, { res, rej })
+              }
+            })
+          }
+          returnPromiseState(result, this.promiseState, { res, rej })
+          this.thenPromise = { res, rej }
+        } catch (error) {
+          rej(error)
+        }
+
+      }, 10)
+    })
+  }
+
+
+  function returnPromiseState(result, state, p) {
+    if (result instanceof Promise) {
+      result.then(data => {
+        p.res(data)
+      }, err => {
+        p.rej(err)
+      })
+    } else {
+      if (state === PromiseState.Fulfilled) {
+        p.res(result)
+      } else if (state === PromiseState.Rejected) {
+        p.rej(result)
+      }
+    }
+  }
+
+
+  const p = new Promise((resolve, reject) => {
+    setTimeout(() => {
+      resolve('OK')
+    }, 1000)
+  })
+
+
+  const res = p.then((data) => {
+    throw '9999'
+  })
+
+  const res2 = res.then((data) => {
+    console.log(1, data)
+    return '1'
+  }, err => {
+    console.log(2, err)
+    return '2'
+  })
+
+  console.log(p)
+  console.log(res, res.promiseState)
+  console.log(res2)
+</script>
