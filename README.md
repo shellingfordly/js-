@@ -53,3 +53,9 @@ Promise.all = function (promiseList) {
     })
   }
 ```
+
+2. this指向问题
+
+```js
+
+```

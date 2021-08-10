@@ -401,11 +401,11 @@
   let p3 = Promise.resolve('OK - 3')
   let all = Promise.all([p1, p2, p3])
 
-  console.log('resolve: ', all)
+  // console.log('resolve: ', all)
 
   p2 = Promise.reject('Err - 2')
   all = Promise.all([p1, p2, p3])
-  console.log('reject: ', all)
+  // console.log('reject: ', all)
 
   // 异步 成功
   p2 = new Promise((res, rej) => {
@@ -414,7 +414,7 @@
     }, 100)
   })
   all = Promise.all([p1, p2, p3])
-  console.log('Resolve SetTimeout: ', all)
+  // console.log('Resolve SetTimeout: ', all)
 
   // 异步 失败
   p2 = new Promise((res, rej) => {
@@ -423,7 +423,7 @@
     }, 100)
   })
   all = Promise.all([p1, p2, p3])
-  console.log('Err SetTimeout: ', all)
+  // console.log('Err SetTimeout: ', all)
 
 </script>
 
@@ -441,16 +441,15 @@
   })
   p3 = Promise.resolve('OK - 3')
   let race = Promise.race([p1, p2, p3])
-  console.log('race: ', race)
+  // console.log('race: ', race)
 </script>
 
 <!-- Promise 异步 测试用例 -->
 <script>
 
   const ppp = new Promise((res, rej) => {
-    console.log(111)
     // res('OKKKKK !!!!')
-    rej('err')
+    // rej('err')
   })
 
   ppp.then(res => {
@@ -459,5 +458,5 @@
     console.log(444)
   })
 
-  console.log(333)
+  // console.log(333)
 </script>
