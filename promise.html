@@ -20,7 +20,7 @@
   //   return Promise.reject(err)
   // })
 </script>
-
+<!-- 
 <script>
   const PromiseState = {
     Pending: 'pending',
@@ -173,4 +173,291 @@
   console.log(p)
   console.log(res, res.promiseState)
   console.log(res2)
+</script> 
+-->
+
+<script>
+  const PromiseState = {
+    Pending: 'pending',
+    Fulfilled: 'fulfilled',
+    Rejected: 'rejected'
+  }
+
+  function Promise(executor) {
+
+    this.promiseState = PromiseState.Pending
+    this.promiseResult = undefined
+    this.callback = []
+    this.thenPromise = null
+
+    const isPending = () => {
+      if (this.promiseState === PromiseState.Pending) return true
+      else return false
+    }
+
+    const resolve = (data) => {
+      if (!isPending()) return
+      this.promiseState = PromiseState.Fulfilled
+      this.promiseResult = data
+      // 执行回调函数
+      this.callback.forEach(item => {
+        item.onResolved(data)
+      })
+
+    }
+
+    const reject = (err) => {
+      if (!isPending()) return
+      this.promiseState = PromiseState.Rejected
+      this.promiseResult = err || 'Err'
+      // 执行回调函数
+      this.callback.forEach(item => {
+        item.onRejected(err)
+      })
+    }
+
+    try {
+      executor(resolve, reject)
+    } catch (error) {
+      reject(error)
+    }
+  }
+
+  Promise.prototype.then = function (onResolved, onRejected) {
+    let result = undefined
+    const self = this
+
+    if (typeof onRejected !== 'function') {
+      onRejected = err => { throw err }
+    }
+
+    if (typeof onResolved !== 'function') {
+      onResolved = value => value
+    }
+
+    return new Promise((resolve, reject) => {
+      function callback(type) {
+        setTimeout(() => {
+          try {
+            let result = type(self.promiseResult)
+            if (result instanceof Promise) {
+              result.then(v => {
+                resolve(result)
+              }, e => {
+                reject(e)
+              })
+            } else {
+              resolve(result)
+            }
+          } catch (err) {
+            reject(err)
+          }
+        })
+      }
+
+      if (this.promiseState === PromiseState.Fulfilled) {
+        callback(onResolved)
+      }
+      if (this.promiseState === PromiseState.Rejected) {
+        callback(onRejected)
+      }
+      if (this.promiseState === PromiseState.Pending) {
+        this.callback.push({
+          onResolved: function () {
+            callback(onResolved)
+          },
+          onRejected: function () {
+            callback(onRejected)
+          }
+        })
+      }
+    })
+  }
+
+
+  Promise.prototype.catch = function (onRejected) {
+    return this.then(undefined, onRejected)
+  }
+
+  Promise.resolve = function (value) {
+    return new Promise((resolve, reject) => {
+      if (value instanceof Promise) {
+        value.then(v => {
+          resolve(v)
+        }, e => {
+          reject(e)
+        })
+      } else {
+        resolve(value)
+      }
+    })
+  }
+
+  Promise.reject = function (value) {
+    return new Promise((resolve, reject) => {
+      reject(value)
+    })
+  }
+
+
+  // Promise.all = function (promiseList) {
+  //   return new Promise((resolve, reject) => {
+  //     const resultList = []
+  //     const len = promiseList.length
+  //     for (let i = 0; i < len; i++) {
+  //       const promise = promiseList[i];
+  //       promise.then(value => {
+  //         resultList[i] = value
+  //         // 直接使用resultList的 length 计算会有问题，当中间的还在等待时，后面的 promise 可能1已经完成了
+  //         // 此时 resultList[i] 设置了更大的下标导致 resultList 的长度已经达到了，返回了成功
+  //         if (resultList.length === len) {
+  //           resolve(resultList)
+  //         }
+  //       }, err => {
+  //         reject(err)
+  //       })
+  //     }
+  //   })
+  // }
+
+  Promise.all = function (promiseList) {
+    const len = promiseList.length
+    return new Promise((resolve, reject) => {
+      const resultList = []
+      let count = 0
+      for (let i = 0; i < len; i++) {
+        const promise = promiseList[i];
+        promise.then(value => {
+          count++
+          resultList[i] = value
+          if (count === len) {
+            resolve(resultList)
+          }
+        }, err => {
+          reject(err)
+        })
+      }
+    })
+  }
+
+  Promise.race = function (promiseList) {
+    return new Promise((resolve, reject) => {
+      for (let i = 0; i < promiseList.length; i++) {
+        const promise = promiseList[i];
+        promise.then(value => {
+          resolve(value)
+        }, err => {
+          reject(err)
+        })
+      }
+    })
+  }
+
+</script>
+
+<!-- Promise 测试用例 -->
+<script>
+  const p = new Promise((resolve, reject) => {
+    setTimeout(() => {
+      // 此处throw在Promise是无法获取到的，所以没有办法捕获错误
+      // 只有使用了 reject 抛出的错误才会穿透下去
+      // throw '9999'
+
+      resolve('ok')
+      reject(888)
+    }, 1000)
+  })
+
+  // const res = p.then((data) => {
+  //   console.log(111)
+  //   throw '9999'
+  // }).then(() => {
+  //   console.log(222)
+  // }).then(() => {
+  //   console.log(333)
+  // }).catch((err) => {
+  //   console.log('err', err)
+  // })
+</script>
+
+<!-- Promise.resolve Promise.reject 测试用例 -->
+<script>
+  const resolve1 = Promise.resolve('resolve - 1')
+  const resolve2 = Promise.resolve(new Promise((res, rej) => { res('resolve - 2') }))
+  const resolve3 = Promise.resolve(new Promise((res, rej) => { rej('resolve - 3') }))
+  // console.log(resolve1, resolve2, resolve3)
+
+
+  const reject1 = Promise.reject('reject - 1')
+  const reject2 = Promise.reject(new Promise((res, rej) => { res('reject - 2') }))
+  const reject3 = Promise.reject(new Promise((res, rej) => { rej('reject - 3') }))
+  // console.log(reject1, reject2, reject3)
+</script>
+
+<!-- Promise.all 测试用例 -->
+<script>
+  let p1 = Promise.resolve('OK - 1')
+  let p2 = Promise.resolve('OK - 2')
+  let p3 = Promise.resolve('OK - 3')
+  let all = Promise.all([p1, p2, p3])
+
+  console.log('resolve: ', all)
+
+  p2 = Promise.reject('Err - 2')
+  all = Promise.all([p1, p2, p3])
+  console.log('reject: ', all)
+
+  // 异步 成功
+  p2 = new Promise((res, rej) => {
+    setTimeout(() => {
+      res('OK setTimeout - 2')
+    }, 100)
+  })
+  all = Promise.all([p1, p2, p3])
+  console.log('Resolve SetTimeout: ', all)
+
+  // 异步 失败
+  p2 = new Promise((res, rej) => {
+    setTimeout(() => {
+      rej('Err SetTimeout - 2')
+    }, 100)
+  })
+  all = Promise.all([p1, p2, p3])
+  console.log('Err SetTimeout: ', all)
+
+</script>
+
+<!-- Promise.race 测试用例 -->
+<script>
+  p1 = new Promise((res, rej) => {
+    setTimeout(() => {
+      res('OK setTimeout - 1')
+    }, 200)
+  })
+  p2 = new Promise((res, rej) => {
+    setTimeout(() => {
+      res('OK setTimeout - 2')
+    }, 100)
+  })
+  p3 = Promise.resolve('OK - 3')
+  let race = Promise.race([p1, p2, p3])
+  console.log('race: ', race)
+</script>
+
+<!-- Promise 异步 测试用例 -->
+<script>
+
+  const ppp = new Promise((res, rej) => {
+    console.log(111)
+    // res('OKKKKK !!!!')
+    rej('err')
+  })
+
+  ppp.then(res => {
+    console.log(222)
+  }, err => {
+    console.log(444)
+  })
+
+  console.log(333)
 </script>

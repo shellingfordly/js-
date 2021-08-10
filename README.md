@@ -25,3 +25,31 @@
 
 
 
+
+
+### 问题
+
+1. 当有好几个异步函数需要等待处理，等到所有异步函数处理完毕之后拿到所有的数据再返回，怎么做到。
+
+```js
+Promise.all = function (promiseList) {
+    const len = promiseList.length
+    return new Promise((resolve, reject) => {
+      const resultList = []
+      let count = 0
+      for (let i = 0; i < len; i++) {
+        const promise = promiseList[i];
+        promise.then(value => {
+          count++
+          resultList[i] = value
+          // 此处如果直接使用 resultList 的长度做判断会有问题
+          if (count === len) {
+            resolve(resultList)
+          }
+        }, err => {
+          reject(err)
+        })
+      }
+    })
+  }
+```
