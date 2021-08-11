@@ -1,19 +1,17 @@
 <script>
 
-  // function fn(e) {
-  //   this.name = 'fn'
-  //   const son = () => {
-  //     // Fn
-  //     console.log('function son this: ', this)
-  //   }
+  function fn(e) {
+    this.name = 'fn'
+    function son() {
+      console.log('function son this: ', this)
+    }
 
-  //   e(son)
-  // }
+    e(son)
+  }
 
-  // new fn(function (son) {
-  //   // Window
-  //   son()
-  // })
+  new fn(function (son) {
+    son()
+  })
 
   class Fn {
     constructor(e) {
@@ -22,7 +20,7 @@
       e(this.son)
     }
 
-    son = () => {
+    son() {
       console.log('class son this: ', this)
     }
   }

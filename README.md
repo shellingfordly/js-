@@ -56,6 +56,74 @@ Promise.all = function (promiseList) {
 
 2. this指向问题
 
+- funciton 默认跳用this指向window
+
 ```js
+function fn(e) {
+    this.name = 'fn'
+
+    function son() {
+      console.log('function son this: ', this)
+    }
+
+    e(son)
+  }
+
+  new fn(function (son) {
+    son()
+})
+
+// 结果：function son this:  Window
+```
+
+- class的方法属性简写形式为function声明
+
+```js
+class Fn {
+    constructor(e) {
+      this.name = 'Fn'
+
+      e(this.son)
+    }
+
+    son() {
+      console.log('class son this: ', this)
+    }
+  }
+
+  new Fn((son) => {
+    son()
+})
+
+// class son this:  undefined
+```
+
+
+## 定时器
+
+1. 定时器真的是定时执行的吗
+    - 定时器并不能保证真正的定时执行
+    - 一般会延迟一点点，是可以接受的范围
+    - 也有可能会延迟很长的时间，不可以接受（
+      - 为什么会延迟很长时间?
+        - 等待同步代码执行
+
+2. 定时器是在主线程中执行的吗
+    - 是的，js是单线程的
+
+
+```js
+const start = Data.now()
+setTimeout(() => {
+  console.log(Date.now() - start)
+})
+// 没有 for 循环，延迟较小，可以接受
+
+// for循环很大时，延迟将毕竟大
+for (let index = 0; index < 10000000000; index++) {
+}
 
 ```
+3. alert
+    - 暂停当前主线程的执行，同时会暂停定时器
+    - 点击确定后，才会恢复程序的执行，和定时器
