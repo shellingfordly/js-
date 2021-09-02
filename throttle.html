@@ -1,0 +1,86 @@
+<script>
+  function throttle(fn, delay) {
+    let timer = null //借助闭包
+    return function () {
+      if (timer) {
+        // 如果再次执行函数，timer已经设置过值了，就清除上一次setTimeout，然后重新定时
+        clearTimeout(timer)
+      }
+      timer = setTimeout(fn, delay) // 简化写法
+    }
+  }
+
+  // 使得:
+  const method = () => console.log('x')
+  const warppedMethod = throttle(method, 3000);
+
+  // 在3s, 6s之后打印 'x'
+  warppedMethod();
+  warppedMethod();
+
+  setTimeout(() => {
+    warppedMethod();
+  }, 2000);
+
+  setTimeout(() => {
+    warppedMethod();
+  }, 5500);
+</script>
+
+
+<!-- <script>
+
+  function throttle1(fn, delay) {
+    let valid = true
+    return function () {
+      if (!valid) {
+        //休息时间 暂不接客
+        return false
+      }
+      // 工作时间，执行函数并且在间隔期内把状态位设为无效
+      valid = false
+      setTimeout(() => {
+        fn()
+        valid = true;
+      }, delay)
+    }
+  }
+
+  function throttle2(fn, delay) {
+    let timer = null
+    return function () {
+      if (timer) {
+        return false
+      }
+      timer = setTimeout(() => {
+        fn()
+        clearTimeout(timer)
+      }, delay)
+    }
+  }
+
+  // 使得:
+  const method = () => console.log('x')
+  console.time(1)
+  const warppedMethod = throttle2(method, 3000);
+
+  // 在3s, 6s之后打印 'x'
+  warppedMethod();
+</script> -->
+
+
+<!-- <script>
+
+  function throttle3(fn, delay) {
+    let timer = null
+    return function () {
+      if (timer) {
+        return false
+      }
+      timer = setTimeout(() => {
+        fn()
+        clearTimeout(timer)
+      }, delay)
+    }
+  }
+</script> -->
